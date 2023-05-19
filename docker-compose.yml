@@ -1,23 +1,21 @@
 version: '3'
 services:
 
-  zookeeper:
-    container_name: jdbc-zookeeper
-    image: quay.io/debezium/zookeeper:2.3
-    ports:
-      - "2181:2181"
-      - "2888:2888"
-      - "3888:3888"
-
   kafka:
     container_name: jdbc-kafka
-    image: quay.io/debezium/kafka:2.3
+    image: quay.io/strimzi/kafka:latest-kafka-3.4.0
+    command: [
+      "sh", "-c",
+      "export CLUSTER_ID=$$(bin/kafka-storage.sh random-uuid) && bin/kafka-storage.sh format -t $$CLUSTER_ID -c config/kraft/server.properties && bin/kafka-server-start.sh config/kraft/server.properties --override advertised.listeners=$${KAFKA_ADVERTISED_LISTENERS} --override listener.security.protocol.map=$${KAFKA_LISTENER_SECURITY_PROTOCOL_MAP} --override listeners=$${KAFKA_LISTENERS}"
+    ]
     ports:
-      - "9092:9092"
-    links:
-      - zookeeper
+      - "29092:29092"
     environment:
-      - ZOOKEEPER_CONNECT=zookeeper:2181
+      LOG_DIR: "/tmp/logs"
+      KAFKA_BROKER_ID: 1
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      KAFKA_LISTENERS: PLAINTEXT://:9092,PLAINTEXT_HOST://:29092,CONTROLLER://:9093
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092,PLAINTEXT_HOST://localhost:29092
 
   mysql:
     container_name: jdbc-mysql
